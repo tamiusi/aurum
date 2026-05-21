@@ -359,5 +359,84 @@
     return flavor;
   }
 
-  A.engine = { compute, standingZones, aiReason };
+  // ----- MiMo AI call (OpenAI-compatible endpoint) -----
+  // Returns plain text reasoning. Falls back to local heuristic on any error.
+  async function aiReasonMimo(result, opts) {
+    if (!result || result.error) return aiReason(result);
+    const key = (opts && opts.apiKey) || "";
+    const endpoint = (opts && opts.endpoint) || "https://token-plan-sgp.xiaomimimo.com/v1";
+    const model = (opts && opts.model) || "mimo-v2.5-pro";
+    if (!key) return aiReason(result);
+
+    const url = endpoint.replace(/\/$/, "") + "/chat/completions";
+
+    const factSheet = {
+      direction: result.dir,
+      tier: result.tier,
+      score: Number(result.score.toFixed(2)),
+      timeframe: opts && opts.tf,
+      style: opts && opts.style,
+      meta: {
+        atr: result.meta.atr ? +result.meta.atr.toFixed(3) : null,
+        adx: result.meta.adx ? +result.meta.adx.toFixed(2) : null,
+        ema200: result.meta.ema200 ? +result.meta.ema200.toFixed(2) : null,
+        vwap: result.meta.vwap ? +result.meta.vwap.toFixed(2) : null,
+        confluence: result.meta.confluence,
+      },
+      prices: {
+        entry: result.prices.entry ? +result.prices.entry.toFixed(2) : null,
+        sl: isNaN(result.prices.sl) ? null : +result.prices.sl.toFixed(2),
+        tp1: isNaN(result.prices.tp1) ? null : +result.prices.tp1.toFixed(2),
+        tp2: isNaN(result.prices.tp2) ? null : +result.prices.tp2.toFixed(2),
+        tp3: isNaN(result.prices.tp3) ? null : +result.prices.tp3.toFixed(2),
+        rr: result.prices.rr,
+      },
+      reasons: result.reasons
+        .filter(r => r.text)
+        .slice(0, 14)
+        .map(r => ({ tag: r.tag, text: r.text, polarity: r.pol, points: r.points })),
+    };
+
+    const sys = "You are a senior XAUUSD analyst. You receive a structured signal report from a multi-system confluence engine and produce a concise, professional reasoning narrative for traders. Rules: (1) Be specific, cite the systems by name. (2) Do NOT give buy/sell instructions or financial advice. (3) Output 90-160 words, plain text, no headers, no bullet points, no markdown. (4) End with one sentence about risk management aligned to the SL/TP structure provided. (5) DYOR. NFA. is implicit, do not repeat it.";
+    const user = "Signal report (JSON):\n\n" + JSON.stringify(factSheet, null, 2) + "\n\nWrite the reasoning narrative now.";
+
+    const body = {
+      model,
+      messages: [
+        { role: "system", content: sys },
+        { role: "user", content: user },
+      ],
+      temperature: 0.4,
+      max_tokens: 320,
+      stream: false,
+    };
+
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 25000);
+    try {
+      const r = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + key,
+        },
+        body: JSON.stringify(body),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+      if (!r.ok) {
+        const t = await r.text().catch(() => "");
+        throw new Error("MiMo " + r.status + " " + t.slice(0, 200));
+      }
+      const j = await r.json();
+      const text = j && j.choices && j.choices[0] && (j.choices[0].message && j.choices[0].message.content);
+      if (!text) throw new Error("MiMo: empty response");
+      return text.trim();
+    } catch (e) {
+      clearTimeout(timer);
+      throw e;
+    }
+  }
+
+  A.engine = { compute, standingZones, aiReason, aiReasonMimo };
 })();

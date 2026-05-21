@@ -35,6 +35,8 @@
     const open = () => {
       $("#tdKey").value = lsGet("aurum.tdKey", "") || "";
       $("#mimoKey").value = lsGet("aurum.mimoKey", "") || "";
+      $("#mimoEndpoint").value = lsGet("aurum.mimoEndpoint", "") || "";
+      $("#mimoModel").value = lsGet("aurum.mimoModel", "") || "";
       $("#reducedMotion").checked = !!lsGet("aurum.reducedMotion", false);
       if (dlg.showModal) dlg.showModal();
       else dlg.setAttribute("open", "");
@@ -45,9 +47,13 @@
       e.preventDefault();
       const td = $("#tdKey").value.trim();
       const mimo = $("#mimoKey").value.trim();
+      const ep = $("#mimoEndpoint").value.trim();
+      const md = $("#mimoModel").value.trim();
       const rm = $("#reducedMotion").checked;
       lsSet("aurum.tdKey", td);
       lsSet("aurum.mimoKey", mimo);
+      lsSet("aurum.mimoEndpoint", ep);
+      lsSet("aurum.mimoModel", md);
       lsSet("aurum.reducedMotion", rm);
       document.body.classList.toggle("reduced-motion", rm);
       A.bus.emit("reducedMotion", rm);
@@ -136,8 +142,28 @@
 
     if (ctx.ai) {
       aiBlock.hidden = false;
-      aiReason.textContent = A.engine.aiReason(result);
-      aiSource.textContent = lsGet("aurum.mimoKey","") ? "MiMo (key set, local heuristic until backend live)" : "Local heuristic · MiMo pending";
+      const mimoKey = lsGet("aurum.mimoKey", "");
+      if (mimoKey) {
+        aiReason.textContent = "• • • contacting MiMo — reasoning…";
+        aiSource.textContent = "MiMo (calling " + (lsGet("aurum.mimoModel", "") || "mimo-v2.5-pro") + ")";
+        A.engine.aiReasonMimo(result, {
+          apiKey: mimoKey,
+          endpoint: lsGet("aurum.mimoEndpoint", "") || "https://token-plan-sgp.xiaomimimo.com/v1",
+          model: lsGet("aurum.mimoModel", "") || "mimo-v2.5-pro",
+          tf: ctx.tf,
+          style: ctx.style,
+        }).then(text => {
+          aiReason.textContent = text;
+          aiSource.textContent = "MiMo · " + (lsGet("aurum.mimoModel", "") || "mimo-v2.5-pro");
+        }).catch(err => {
+          console.warn("MiMo error:", err);
+          aiReason.textContent = A.engine.aiReason(result);
+          aiSource.textContent = "Local heuristic · MiMo error: " + (err.message || "unknown").slice(0, 80);
+        });
+      } else {
+        aiReason.textContent = A.engine.aiReason(result);
+        aiSource.textContent = "Local heuristic · paste MiMo key in Settings to unlock AI";
+      }
     } else {
       aiBlock.hidden = true;
     }
