@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="description" content="AURUM — XAUUSD live price and AI-assisted trading signal engine. Confluence-based scoring across SMC, ICT, and momentum systems. DYOR. NFA.">
+<meta name="color-scheme" content="dark">
+<title>AURUM — XAUUSD Signal Engine</title>
+<link rel="preload" as="image" href="assets/bg.jpg" imagesrcset="assets/bg-mobile.jpg 1280w, assets/bg.jpg 2560w" imagesizes="100vw">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><text x='32' y='44' font-size='44' text-anchor='middle' fill='%23D4AF37' font-family='serif' font-weight='900'>A</text></svg>">
+</head>
+<body>
+
+<div class="bg-layer" aria-hidden="true">
+  <div class="bg-img" id="bgImg"></div>
+  <div class="bg-grain"></div>
+  <div class="bg-vignette"></div>
+  <div class="bg-grid"></div>
+</div>
+
+<canvas id="cursorCanvas" aria-hidden="true"></canvas>
+
+<header class="topbar" role="banner">
+  <div class="topbar__inner">
+    <a class="brand" href="#top" aria-label="AURUM home">
+      <span class="brand__logo" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="22" height="22"><path d="M16 2 L29 9 L29 23 L16 30 L3 23 L3 9 Z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M16 8 L23 12 L23 20 L16 24 L9 20 L9 12 Z" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".6"/><circle cx="16" cy="16" r="2.2" fill="currentColor"/></svg>
+      </span>
+      <span class="brand__name">AURUM</span>
+      <span class="brand__tag">XAUUSD signal engine</span>
+    </a>
+
+    <nav class="topbar__nav" aria-label="Primary">
+      <a href="#engine" class="nav-link" data-blink>Signal</a>
+      <a href="#chart" class="nav-link" data-blink>Chart</a>
+      <a href="#zones" class="nav-link" data-blink>Zones</a>
+      <a href="#about" class="nav-link" data-blink>About</a>
+    </nav>
+
+    <div class="topbar__actions">
+      <button class="btn btn--ghost" id="settingsBtn" aria-haspopup="dialog" data-blink>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        Settings
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero__inner">
+
+      <div class="hero__left">
+        <div class="eyebrow">
+          <span class="dot dot--live"></span>
+          <span>LIVE — spot XAUUSD</span>
+        </div>
+
+        <h1 class="hero__title">
+          Read the gold market
+          <span class="grad">like a sniper</span>.
+        </h1>
+
+        <p class="hero__sub">
+          Confluence-based signal engine combining SMC structure, ICT liquidity, FVG zones, momentum
+          and trend filters — distilled from a 14-system Pine Script into a one-tap web demo.
+        </p>
+
+        <div class="hero__cta">
+          <a class="btn btn--primary" href="#engine" data-blink>
+            <span>Cek Signal</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+          </a>
+          <a class="btn btn--ghost" href="#zones" data-blink>View standing zones</a>
+        </div>
+
+        <div class="hero__meta">
+          <span>DYOR. NFA. Demo product. Not financial advice.</span>
+        </div>
+      </div>
+
+      <div class="hero__right">
+        <article class="price-card" id="priceCard" aria-live="polite">
+          <header class="price-card__header">
+            <div class="symbol">
+              <span class="symbol__main">XAU/USD</span>
+              <span class="symbol__sub">Gold spot · 24h</span>
+            </div>
+            <span class="badge badge--live"><span class="dot dot--live"></span><span id="connState">connecting</span></span>
+          </header>
+
+          <div class="price-card__body">
+            <div class="price-card__quote">
+              <div class="quote">
+                <span class="quote__price" id="priceMain">— —</span>
+                <span class="quote__unit">USD</span>
+              </div>
+              <div class="quote__delta" id="priceDelta">
+                <span id="priceDeltaAbs">—</span>
+                <span id="priceDeltaPct" class="quote__pct">(—%)</span>
+              </div>
+              <div class="quote__sessions" id="sessionsTrack">
+                <!-- populated by clock.js -->
+              </div>
+            </div>
+
+            <div class="price-card__sparkline">
+              <svg viewBox="0 0 200 64" preserveAspectRatio="none" aria-hidden="true">
+                <defs>
+                  <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#D4AF37" stop-opacity="0.45"/>
+                    <stop offset="100%" stop-color="#D4AF37" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <path id="sparkArea" d="M0,32 L200,32 L200,64 L0,64 Z" fill="url(#sparkFill)"/>
+                <path id="sparkLine" d="M0,32 L200,32" fill="none" stroke="#D4AF37" stroke-width="1.2"/>
+              </svg>
+              <div class="price-card__sparkmeta">
+                <span id="sparkRangeLow">—</span>
+                <span class="muted">last 60 ticks</span>
+                <span id="sparkRangeHigh">—</span>
+              </div>
+            </div>
+          </div>
+
+          <footer class="price-card__footer">
+            <div class="clock-block">
+              <span class="clock-block__label">Local</span>
+              <span class="clock-block__time" id="localTime">—</span>
+              <span class="clock-block__tz" id="localTz">—</span>
+            </div>
+            <div class="clock-block">
+              <span class="clock-block__label">UTC</span>
+              <span class="clock-block__time" id="utcTime">—</span>
+              <span class="clock-block__tz">UTC</span>
+            </div>
+            <div class="clock-block clock-block--wide">
+              <span class="clock-block__label">TZ</span>
+              <span class="clock-block__time clock-block__time--small" id="tzName">—</span>
+              <span class="clock-block__tz" id="tzOffset">—</span>
+            </div>
+          </footer>
+        </article>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ENGINE -->
+  <section id="engine" class="section">
+    <div class="container">
+      <header class="section__head">
+        <h2 class="section__title"><span class="grad">Signal</span> engine</h2>
+        <p class="section__sub">14-system confluence scoring. Every output is reasoned. Nothing is hidden.</p>
+      </header>
+
+      <div class="engine-grid">
+        <!-- Controls -->
+        <aside class="panel panel--controls">
+          <h3 class="panel__title">Configure</h3>
+
+          <div class="control">
+            <label class="control__label">Timeframe</label>
+            <div class="seg" id="tfSeg" role="radiogroup" aria-label="Timeframe">
+              <button class="seg__btn" role="radio" data-val="1m">1m</button>
+              <button class="seg__btn is-on" role="radio" aria-checked="true" data-val="5m">5m</button>
+              <button class="seg__btn" role="radio" data-val="15m">15m</button>
+              <button class="seg__btn" role="radio" data-val="30m">30m</button>
+              <button class="seg__btn" role="radio" data-val="1h">1h</button>
+              <button class="seg__btn" role="radio" data-val="4h">4h</button>
+              <button class="seg__btn" role="radio" data-val="1d">1d</button>
+            </div>
+          </div>
+
+          <div class="control">
+            <label class="control__label">Style</label>
+            <div class="seg seg--3" id="modeSeg" role="radiogroup" aria-label="Trade style">
+              <button class="seg__btn is-on" role="radio" aria-checked="true" data-val="scalping">Scalping</button>
+              <button class="seg__btn" role="radio" data-val="intraday">Intraday</button>
+              <button class="seg__btn" role="radio" data-val="swing">Swing</button>
+            </div>
+          </div>
+
+          <div class="control control--row">
+            <span class="control__label">ADX gate</span>
+            <label class="switch">
+              <input type="checkbox" id="adxGate" checked>
+              <span class="switch__track"></span>
+            </label>
+          </div>
+
+          <div class="control control--row">
+            <span class="control__label">AI reasoning (MiMo)</span>
+            <label class="switch">
+              <input type="checkbox" id="aiOn">
+              <span class="switch__track"></span>
+            </label>
+          </div>
+
+          <button id="runSignalBtn" class="btn btn--primary btn--block" data-blink>
+            <span class="btn__pulse" aria-hidden="true"></span>
+            <span>Cek Signal</span>
+          </button>
+
+          <button id="standingBtn" class="btn btn--ghost btn--block" data-blink>
+            Standing zones
+          </button>
+
+          <p class="panel__hint">
+            Engine uses live spot polling to build OHLC bars in your browser. For instant
+            historical analysis, add a TwelveData key in <a href="#" id="settingsLinkInline">Settings</a>.
+          </p>
+        </aside>
+
+        <!-- Output -->
+        <div class="panel panel--output">
+          <div class="signal-card" id="signalCard" data-state="idle">
+            <header class="signal-card__head">
+              <div class="signal-card__title">
+                <span class="signal-card__verdict" id="verdict">READY</span>
+                <span class="signal-card__tier" id="tier">—</span>
+              </div>
+              <div class="signal-card__meta">
+                <span id="sigTf">—</span>
+                <span class="sep">·</span>
+                <span id="sigStyle">—</span>
+                <span class="sep">·</span>
+                <span id="sigStamp">—</span>
+              </div>
+            </header>
+
+            <div class="signal-card__core">
+              <div class="signal-score" aria-label="Confluence score">
+                <div class="signal-score__bar">
+                  <div class="signal-score__zero"></div>
+                  <div class="signal-score__fill" id="scoreFill"></div>
+                </div>
+                <div class="signal-score__nums">
+                  <span class="muted">Score</span>
+                  <span id="scoreNum">0</span>
+                  <span class="muted">/ 25</span>
+                </div>
+              </div>
+
+              <div class="signal-prices">
+                <div class="sp">
+                  <span class="sp__lbl">Entry zone</span>
+                  <span class="sp__val" id="entryZone">—</span>
+                </div>
+                <div class="sp">
+                  <span class="sp__lbl">SL</span>
+                  <span class="sp__val sp__val--sl" id="slVal">—</span>
+                </div>
+                <div class="sp">
+                  <span class="sp__lbl">TP1</span>
+                  <span class="sp__val sp__val--tp" id="tp1Val">—</span>
+                </div>
+                <div class="sp">
+                  <span class="sp__lbl">TP2</span>
+                  <span class="sp__val sp__val--tp" id="tp2Val">—</span>
+                </div>
+                <div class="sp">
+                  <span class="sp__lbl">TP3</span>
+                  <span class="sp__val sp__val--tp" id="tp3Val">—</span>
+                </div>
+                <div class="sp">
+                  <span class="sp__lbl">R:R</span>
+                  <span class="sp__val" id="rrVal">—</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="signal-card__reason">
+              <h4 class="signal-card__h">Reasoning</h4>
+              <ul id="reasonList" class="reason-list">
+                <li class="reason-list__empty">Press <strong>Cek Signal</strong> to compute confluence across SMC, ICT, momentum and trend systems.</li>
+              </ul>
+            </div>
+
+            <div class="signal-card__ai" id="aiBlock" hidden>
+              <h4 class="signal-card__h"><span class="ai-pill">AI</span> reasoning</h4>
+              <p id="aiReason" class="ai-reason">—</p>
+              <p class="ai-source" id="aiSource">Local heuristic · MiMo pending</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHART -->
+  <section id="chart" class="section">
+    <div class="container">
+      <header class="section__head">
+        <h2 class="section__title"><span class="grad">Chart</span></h2>
+        <p class="section__sub">TradingView Advanced Chart — pinned to OANDA:XAUUSD.</p>
+      </header>
+
+      <div class="panel panel--chart">
+        <div class="tradingview-widget-container">
+          <div id="tvChart" class="tv-chart"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ZONES -->
+  <section id="zones" class="section">
+    <div class="container">
+      <header class="section__head">
+        <h2 class="section__title"><span class="grad">Standing</span> zones</h2>
+        <p class="section__sub">Continuously projected BUY / SELL preparation zones — ready to set limit orders.</p>
+      </header>
+
+      <div class="zones-grid" id="zonesGrid">
+        <article class="zone-card zone-card--placeholder">
+          <p>Press <strong>Standing zones</strong> in the engine panel to generate projected entry zones.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about" class="section section--about">
+    <div class="container">
+      <header class="section__head">
+        <h2 class="section__title">How <span class="grad">AURUM</span> thinks</h2>
+        <p class="section__sub">Built on a confluence-based Pine Script that scores 14 separate systems and emits BUY / SELL only when enough of them agree.</p>
+      </header>
+
+      <div class="about-grid">
+        <div class="about-card">
+          <span class="about-card__num">01</span>
+          <h3>Trend &amp; momentum</h3>
+          <p>EMA200 trend filter, Supertrend direction and flips, ADX trend / chop gating, fast-RSI confirmation and volume surge.</p>
+        </div>
+        <div class="about-card">
+          <span class="about-card__num">02</span>
+          <h3>SMC structure</h3>
+          <p>Swing-high / swing-low tracking, BOS and CHoCH detection, displacement candles, premium / discount zone bias.</p>
+        </div>
+        <div class="about-card">
+          <span class="about-card__num">03</span>
+          <h3>ICT &amp; liquidity</h3>
+          <p>Equal-high / equal-low sweep liquidity, FVG and order-block confluence, inducement traps, AMD-aware smart SL.</p>
+        </div>
+        <div class="about-card">
+          <span class="about-card__num">04</span>
+          <h3>Flow &amp; oscillators</h3>
+          <p>VCO oscillator, RSI / CCI / Stoch / MFI consensus, VWAP relative position, CVD direction, volume profile POC / VAH / VAL.</p>
+        </div>
+        <div class="about-card">
+          <span class="about-card__num">05</span>
+          <h3>Tiered scoring</h3>
+          <p>Score in [-25, +25]. SNIPER ≥ ±15, HIGH ≥ ±10, STD above threshold. Momentum override for strong directional moves.</p>
+        </div>
+        <div class="about-card">
+          <span class="about-card__num">06</span>
+          <h3>Risk model</h3>
+          <p>Smart SL anchored to last swing, tiered TP1 / TP2 / TP3, fixed-points or ATR-based, every output paired with R:R math.</p>
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>Order-flow / footprint</strong> is the next frontier — it requires paid CME tape data and is on the roadmap, not in the demo.
+        <br><strong>DYOR. NFA.</strong> AURUM is an analysis tool, not a trading recommendation.
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container footer__inner">
+    <span class="footer__brand">AURUM</span>
+    <span class="footer__sep">·</span>
+    <span>XAUUSD signal engine demo</span>
+    <span class="footer__sep">·</span>
+    <span>Built with vanilla JS, zero backend, MIT.</span>
+    <span class="footer__sep">·</span>
+    <a href="https://github.com/urarore/aurum" target="_blank" rel="noopener">Source</a>
+  </div>
+</footer>
+
+<!-- Settings dialog -->
+<dialog id="settingsDlg" class="dlg">
+  <form method="dialog" class="dlg__form">
+    <header class="dlg__head">
+      <h3>Settings</h3>
+      <button class="dlg__close" value="cancel" aria-label="Close">×</button>
+    </header>
+
+    <div class="dlg__body">
+      <label class="field">
+        <span class="field__label">TwelveData API key (optional)</span>
+        <input type="password" id="tdKey" autocomplete="off" placeholder="paste key — stored only in your browser">
+        <span class="field__hint">Free tier on twelvedata.com gives 800 req/day. Without a key, AURUM still works using live spot polling.</span>
+      </label>
+
+      <label class="field">
+        <span class="field__label">MiMo API key (optional)</span>
+        <input type="password" id="mimoKey" autocomplete="off" placeholder="paste key — stored only in your browser">
+        <span class="field__hint">When MiMo platform is live, paste the key here to unlock AI reasoning.</span>
+      </label>
+
+      <label class="field">
+        <span class="field__label">Reduce motion</span>
+        <input type="checkbox" id="reducedMotion">
+        <span class="field__hint">Disable cursor trail, glow blinks and bg parallax.</span>
+      </label>
+    </div>
+
+    <footer class="dlg__foot">
+      <button class="btn btn--ghost" value="cancel">Cancel</button>
+      <button class="btn btn--primary" id="saveSettings" type="submit">Save</button>
+    </footer>
+  </form>
+</dialog>
+
+<!-- Toast -->
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<!-- Scripts -->
+<script src="js/util.js"></script>
+<script src="js/cursor.js"></script>
+<script src="js/clock.js"></script>
+<script src="js/price.js"></script>
+<script src="js/indicators.js"></script>
+<script src="js/smc.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/data.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
