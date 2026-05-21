@@ -49,6 +49,23 @@
 </header>
 
 <main id="top">
+  <!-- Mirror notice banner -->
+  <div id="mirrorNotice" class="mirror-notice" role="status">
+    <div class="container mirror-notice__inner">
+      <span class="mirror-notice__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2 L2 22 L22 22 Z"/><path d="M12 9 L12 14"/><circle cx="12" cy="17.5" r="1" fill="currentColor"/></svg>
+      </span>
+      <span class="mirror-notice__text">
+        <strong>GitHub repo currently hidden</strong> &mdash; the @urarore account is pending review by GitHub Support.
+        Source code is available below as a direct download, and a mirror is being set up.
+      </span>
+      <span class="mirror-notice__links">
+        <a id="downloadSource" class="mirror-notice__link" href="aurum-source.zip" download data-blink>Download source (.zip)</a>
+        <a id="mirrorLink" class="mirror-notice__link is-pending" href="#" aria-disabled="true" data-blink>Mirror &middot; pending</a>
+      </span>
+    </div>
+  </div>
+
   <!-- HERO -->
   <section class="hero">
     <div class="hero__inner">
