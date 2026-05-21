@@ -6,7 +6,7 @@
 [![Static Site](https://img.shields.io/badge/deploy-static-green)]()
 [![License: MIT](https://img.shields.io/badge/license-MIT-cyan.svg)](LICENSE)
 
-Live demo: [aurum-xau.surge.sh](https://aurum-xau.surge.sh)
+Live demo: [aurum-signal.surge.sh](https://aurum-signal.surge.sh)
 
 Source: [github.com/tamiusi/aurum](https://github.com/tamiusi/aurum)
 
