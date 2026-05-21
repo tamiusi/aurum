@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0a0a0a">
+<title>AURUM — Source Browser</title>
+<link rel="stylesheet" href="../css/style.css">
+<style>
+  body{padding-top:0}
+  .source-app{padding:32px 20px 96px;min-height:100vh;}
+  .source-grid{
+    display:grid;grid-template-columns:280px 1fr;gap:24px;
+    max-width:1280px;margin:0 auto;
+    background:linear-gradient(180deg, rgba(18,18,20,.85), rgba(10,10,12,.85));
+    border:1px solid var(--border);
+    border-radius:var(--r-lg);
+    overflow:hidden;
+    box-shadow:var(--shadow);
+  }
+  @media (max-width:780px){.source-grid{grid-template-columns:1fr}}
+  .file-tree{
+    border-right:1px solid var(--border);
+    padding:18px 0;
+    max-height:80vh;overflow-y:auto;
+    background:rgba(0,0,0,.25);
+  }
+  @media (max-width:780px){.file-tree{border-right:none;border-bottom:1px solid var(--border);max-height:none}}
+  .tree-h{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);padding:0 18px 10px}
+  .tree-group{margin-bottom:14px}
+  .tree-item{
+    display:flex;align-items:center;gap:8px;
+    padding:8px 18px;font-size:13px;color:var(--ink-dim);
+    border-left:2px solid transparent;
+    cursor:pointer;
+    transition:color .2s,background .2s,border-color .2s;
+    user-select:none;
+  }
+  .tree-item:hover{color:var(--ink);background:rgba(255,255,255,.03)}
+  .tree-item.is-active{
+    color:var(--gold-2);
+    background:rgba(212,175,55,.05);
+    border-left-color:var(--gold);
+  }
+  .tree-item__icon{flex-shrink:0;color:var(--muted-2);width:14px;height:14px}
+  .tree-item.is-active .tree-item__icon{color:var(--gold)}
+  .tree-item__size{margin-left:auto;font-size:11px;color:var(--muted-2);font-feature-settings:"tnum" 1}
+
+  .file-view{display:flex;flex-direction:column;min-width:0}
+  .file-view__head{
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+    padding:14px 18px;border-bottom:1px solid var(--border);
+    background:rgba(0,0,0,.25);
+  }
+  .file-view__title{
+    font-size:13.5px;color:var(--ink);font-weight:600;
+    display:flex;align-items:center;gap:10px;
+    font-feature-settings:"tnum" 1;
+  }
+  .file-view__title small{color:var(--muted-2);font-weight:400;font-size:12px}
+  .file-view__actions{display:flex;gap:6px}
+  .file-view__body{
+    overflow:auto;max-height:75vh;
+    background:#0d0d0e;
+    font-family:"JetBrains Mono","Fira Code",ui-monospace,SFMono-Regular,Consolas,monospace;
+    font-size:13px;line-height:1.55;
+  }
+  .file-view__pre{
+    margin:0;padding:18px 20px;
+    color:var(--ink-dim);
+    white-space:pre;
+    tab-size:2;
+  }
+  .file-view__lineno{
+    display:inline-block;width:3.6em;color:var(--muted-2);
+    text-align:right;padding-right:1.2em;user-select:none;
+    border-right:1px solid var(--border);margin-right:1em;
+  }
+  .empty-state{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:64px 32px;color:var(--muted);text-align:center;gap:12px;
+    min-height:380px;
+  }
+  .empty-state svg{color:var(--gold-deep)}
+  .empty-state h3{font-size:1.1rem;color:var(--ink);font-weight:600}
+  .empty-state p{font-size:13.5px;max-width:380px}
+
+  /* simple syntax highlight */
+  .tok-key{color:#f3cf5e}
+  .tok-str{color:#9bd6a8}
+  .tok-num{color:#d4af37}
+  .tok-com{color:#5a5a5a;font-style:italic}
+  .tok-fn{color:#7fc4ff}
+  .tok-tag{color:#ff8aa1}
+  .tok-attr{color:#f3cf5e}
+  .tok-prop{color:#7fc4ff}
+
+  .source-head{
+    max-width:1280px;margin:0 auto 24px;padding:0 4px;
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;
+  }
+  .source-head h1{
+    font-size:1.6rem;font-weight:700;letter-spacing:-.02em;
+    display:flex;align-items:center;gap:14px;
+  }
+  .source-head h1 small{color:var(--muted);font-weight:400;font-size:13px;letter-spacing:.05em;text-transform:uppercase}
+  .back-btn{
+    color:var(--ink-dim);font-size:13px;
+    padding:8px 14px;border-radius:var(--r-pill);
+    border:1px solid var(--border);background:rgba(255,255,255,.02);
+  }
+  .back-btn:hover{color:var(--ink);background:rgba(255,255,255,.05)}
+</style>
+</head>
+<body>
+
+<div class="bg-layer" aria-hidden="true">
+  <div class="bg-img"></div>
+  <div class="bg-grain"></div>
+  <div class="bg-vignette"></div>
+  <div class="bg-grid"></div>
+</div>
+
+<canvas id="cursorCanvas" aria-hidden="true"></canvas>
+
+<header class="topbar" role="banner">
+  <div class="topbar__inner">
+    <a class="brand" href="../" aria-label="AURUM home">
+      <span class="brand__logo" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="22" height="22"><path d="M16 2 L29 9 L29 23 L16 30 L3 23 L3 9 Z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M16 8 L23 12 L23 20 L16 24 L9 20 L9 12 Z" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".6"/><circle cx="16" cy="16" r="2.2" fill="currentColor"/></svg>
+      </span>
+      <span class="brand__name">AURUM</span>
+      <span class="brand__tag">source browser</span>
+    </a>
+    <div class="topbar__actions">
+      <a class="btn btn--ghost" href="../aurum-source.zip" download data-blink>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+        Download .zip
+      </a>
+      <a class="btn btn--ghost back-btn" href="../" data-blink>← Back</a>
+    </div>
+  </div>
+</header>
+
+<main class="source-app">
+  <div class="source-head">
+    <h1><span class="grad">Source</span> <small>full project files · vanilla JS · MIT</small></h1>
+  </div>
+
+  <div class="source-grid">
+    <aside class="file-tree" id="fileTree" aria-label="File tree"></aside>
+    <section class="file-view">
+      <header class="file-view__head">
+        <div class="file-view__title" id="viewTitle">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span>Select a file</span>
+        </div>
+        <div class="file-view__actions" id="viewActions"></div>
+      </header>
+      <div class="file-view__body">
+        <div class="empty-state" id="emptyState">
+          <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          <h3>Source browser</h3>
+          <p>Pick a file in the sidebar to view its contents. Every file is fetched live from the production deployment — what you see here is exactly what runs on aurum-xau.surge.sh.</p>
+        </div>
+        <pre class="file-view__pre" id="viewPre" hidden></pre>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container footer__inner">
+    <span class="footer__brand">AURUM</span>
+    <span class="footer__sep">·</span>
+    <span>Built with vanilla HTML/CSS/JS · MIT License</span>
+    <span class="footer__sep">·</span>
+    <a href="../">Live demo</a>
+    <span class="footer__sep">·</span>
+    <a href="../aurum-source.zip" download>Download all (.zip)</a>
+  </div>
+</footer>
+
+<script src="../js/util.js"></script>
+<script src="../js/cursor.js"></script>
+<script>
+(function(){
+  const FILES = [
+    { group: "Root", items: [
+      { path: "index.html", lang: "html", desc: "Main app HTML, structure & widgets" },
+      { path: "README.md", lang: "md", desc: "Project README" },
+      { path: "LICENSE", lang: "txt", desc: "MIT License" },
+    ]},
+    { group: "Styles", items: [
+      { path: "css/style.css", lang: "css", desc: "Theme: black + gold, animated bg, layouts" },
+    ]},
+    { group: "Scripts", items: [
+      { path: "js/util.js", lang: "js", desc: "Utility helpers, event bus, formatters" },
+      { path: "js/cursor.js", lang: "js", desc: "Gold cursor trail canvas" },
+      { path: "js/clock.js", lang: "js", desc: "Local + UTC + tz auto-detect, market sessions" },
+      { path: "js/price.js", lang: "js", desc: "Live spot polling + sparkline" },
+      { path: "js/indicators.js", lang: "js", desc: "TA primitives: EMA, RSI, ATR, ADX, Supertrend, CCI, Stoch, VWAP" },
+      { path: "js/smc.js", lang: "js", desc: "SMC/ICT structure: swings, BOS/CHoCH, FVG, EQH/EQL, premium/discount" },
+      { path: "js/engine.js", lang: "js", desc: "14-system confluence engine + standing zones + MiMo AI call" },
+      { path: "js/data.js", lang: "js", desc: "Bar-data fetcher with multi-source CORS-proxied fallback" },
+      { path: "js/ui.js", lang: "js", desc: "Segmented controls, dialog, signal/zone rendering" },
+      { path: "js/app.js", lang: "js", desc: "App entrypoint, wires events" },
+    ]},
+    { group: "Source archive", items: [
+      { path: "aurum-source.zip", lang: "bin", desc: "Full source bundle (.zip)" },
+    ]},
+  ];
+
+  const tree = document.getElementById("fileTree");
+  const viewTitle = document.getElementById("viewTitle");
+  const viewActions = document.getElementById("viewActions");
+  const viewPre = document.getElementById("viewPre");
+  const emptyState = document.getElementById("emptyState");
+
+  // Build tree
+  FILES.forEach(g => {
+    const wrap = document.createElement("div");
+    wrap.className = "tree-group";
+    wrap.innerHTML = `<div class="tree-h">${g.group}</div>`;
+    g.items.forEach(it => {
+      const a = document.createElement("a");
+      a.className = "tree-item";
+      a.href = "#" + encodeURIComponent(it.path);
+      a.dataset.path = it.path;
+      a.dataset.lang = it.lang;
+      a.innerHTML = `
+        <svg class="tree-item__icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+        <span>${it.path}</span>
+      `;
+      a.addEventListener("click", e => { e.preventDefault(); selectFile(it); });
+      wrap.appendChild(a);
+    });
+    tree.appendChild(wrap);
+  });
+
+  function setActive(path) {
+    document.querySelectorAll(".tree-item").forEach(el => {
+      el.classList.toggle("is-active", el.dataset.path === path);
+    });
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  function highlightJS(src) {
+    const KW = /\b(const|let|var|function|return|if|else|for|while|do|switch|case|break|continue|new|class|extends|super|this|throw|try|catch|finally|async|await|of|in|typeof|instanceof|null|undefined|true|false|export|import|from|default|void|yield|delete|with)\b/g;
+    let out = escapeHtml(src);
+    out = out.replace(/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)/g, '<span class="tok-com">$1</span>');
+    out = out.replace(/(["'`])((?:\\.|(?!\1).)*?)\1/g, '<span class="tok-str">$1$2$1</span>');
+    out = out.replace(/\b(\d+\.?\d*)\b/g, '<span class="tok-num">$1</span>');
+    out = out.replace(KW, '<span class="tok-key">$1</span>');
+    out = out.replace(/\b([A-Za-z_$][\w$]*)(?=\s*\()/g, '<span class="tok-fn">$1</span>');
+    return out;
+  }
+
+  function highlightCSS(src) {
+    let out = escapeHtml(src);
+    out = out.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="tok-com">$1</span>');
+    out = out.replace(/(\#[a-fA-F0-9]{3,8}\b|\b\d+(\.\d+)?(px|em|rem|vh|vw|%|s|ms|deg)?\b)/g, '<span class="tok-num">$1</span>');
+    out = out.replace(/("[^"]*"|'[^']*')/g, '<span class="tok-str">$1</span>');
+    out = out.replace(/([\w\-]+)(?=\s*:)/g, '<span class="tok-prop">$1</span>');
+    out = out.replace(/(@[\w\-]+|--[\w\-]+)/g, '<span class="tok-key">$1</span>');
+    return out;
+  }
+
+  function highlightHTML(src) {
+    let out = escapeHtml(src);
+    out = out.replace(/(&lt;!--[\s\S]*?--&gt;)/g, '<span class="tok-com">$1</span>');
+    out = out.replace(/(&lt;\/?)([\w\-]+)/g, '$1<span class="tok-tag">$2</span>');
+    out = out.replace(/(\s)([\w\-]+)(=)/g, '$1<span class="tok-attr">$2</span>$3');
+    out = out.replace(/(="[^"]*"|='[^']*')/g, c => '<span class="tok-str">' + c.slice(1) + '</span>');
+    return out;
+  }
+
+  function highlight(src, lang) {
+    if (lang === "js") return highlightJS(src);
+    if (lang === "css") return highlightCSS(src);
+    if (lang === "html") return highlightHTML(src);
+    return escapeHtml(src);
+  }
+
+  function withLineNumbers(html, raw) {
+    const lines = raw.split("\n");
+    const hlLines = html.split("\n");
+    return hlLines.map((l, i) => `<span class="file-view__lineno">${i + 1}</span>${l}`).join("\n");
+  }
+
+  async function selectFile(it) {
+    history.replaceState(null, "", "#" + encodeURIComponent(it.path));
+    setActive(it.path);
+    viewTitle.innerHTML = `
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+      <span>${it.path}</span>
+      <small id="byteCount">loading…</small>
+    `;
+    viewActions.innerHTML = `
+      <a class="btn btn--ghost" href="../${it.path}" target="_blank" rel="noopener">Raw</a>
+      <button class="btn btn--ghost" id="copyBtn">Copy</button>
+    `;
+    emptyState.hidden = true;
+    viewPre.hidden = false;
+    viewPre.textContent = "loading…";
+
+    if (it.lang === "bin") {
+      viewPre.hidden = true;
+      emptyState.hidden = false;
+      emptyState.innerHTML = `
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        <h3>Binary file</h3>
+        <p><a href="../${it.path}" download class="btn btn--primary">Download ${it.path}</a></p>
+      `;
+      return;
+    }
+
+    try {
+      const r = await fetch("../" + it.path, { cache: "no-store" });
+      if (!r.ok) throw new Error(r.status);
+      const text = await r.text();
+      const bc = document.getElementById("byteCount");
+      if (bc) bc.textContent = `${(text.length / 1024).toFixed(1)} KB · ${text.split("\n").length} lines`;
+      const hl = highlight(text, it.lang);
+      viewPre.innerHTML = withLineNumbers(hl, text);
+      const copy = document.getElementById("copyBtn");
+      if (copy) copy.addEventListener("click", () => {
+        navigator.clipboard.writeText(text).then(() => {
+          copy.textContent = "Copied";
+          setTimeout(() => copy.textContent = "Copy", 1400);
+        });
+      });
+    } catch (e) {
+      viewPre.textContent = "Error: " + e.message;
+    }
+  }
+
+  // Open from hash or default to index.html
+  const hash = decodeURIComponent(location.hash.slice(1));
+  const initial = (() => {
+    for (const g of FILES) for (const it of g.items) if (it.path === hash) return it;
+    return FILES[2].items[6]; // engine.js by default
+  })();
+  if (initial) selectFile(initial);
+})();
+</script>
+</body>
+</html>
