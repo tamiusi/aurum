@@ -105,3 +105,4 @@ This project demonstrates a **production-quality LLM-AI assist surface**:
 MIT — see [LICENSE](LICENSE).
 
 Built with vanilla JS + obsession.
+
